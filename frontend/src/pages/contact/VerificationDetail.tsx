@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { Card, CardHeader, CardBody } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { ErrorBanner, Spinner, SuccessBanner } from "../../components/ui/Feedback";
@@ -11,12 +11,12 @@ import type { ContactInboxItem } from "../../api/types";
 import { describeError } from "../../lib/errors";
 import { formatCurrency, reasonLabel } from "../../lib/format";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+import { ArrowLeft, Check, X, ShieldAlert, KeyRound, Clock, MessageSquare, AlertTriangle } from "lucide-react";
 
 export function VerificationDetail() {
-  useDocumentTitle("Verification request");
+  useDocumentTitle("Identity Verification Review — SafeSignal");
   const { verificationId } = useParams<{ verificationId: string }>();
   const { identity } = useIdentity();
-  const navigate = useNavigate();
   const [item, setItem] = useState<ContactInboxItem | null>(null);
   const [error, setError] = useState<{ title: string; message: string } | null>(null);
   const [responding, setResponding] = useState<"CONFIRMED" | "REJECTED" | null>(null);
@@ -43,10 +43,15 @@ export function VerificationDetail() {
   }, [load]);
 
   if (!identity || identity.role !== "contact") {
-    return <ErrorBanner title="No trusted-contact persona selected" message="Go to the home page and pick a trusted-contact persona." />;
+    return (
+      <ErrorBanner
+        title="No trusted-contact persona selected"
+        message="Go to the home page and pick a trusted-contact persona."
+      />
+    );
   }
   if (error && !item) return <ErrorBanner title={error.title} message={error.message} />;
-  if (!item) return <Spinner label="Loading verification…" />;
+  if (!item) return <Spinner label="Loading verification details…" />;
 
   const isPending = item.status === "PENDING";
   const isTier3 = item.tier === 3;
@@ -60,8 +65,8 @@ export function VerificationDetail() {
       const result = await fn(identity.token, item.verification_id, response);
       setSuccess(
         response === "CONFIRMED"
-          ? "Confirmed. The requester's action has been unlocked."
-          : "Rejected. The request stays paused and will escalate."
+          ? "Confirmed. The recipient's transaction has been authorized and released."
+          : "Rejected. The transfer remains securely paused and escalated."
       );
       setItem({ ...item, status: result.status });
     } catch (err) {
@@ -72,87 +77,151 @@ export function VerificationDetail() {
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-5">
-      <button onClick={() => navigate("/contact")} className="w-fit text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)]">
-        ← Back to inbox
-      </button>
+    <div className="mx-auto flex max-w-2xl flex-col gap-6">
+      {/* Back button */}
+      <div>
+        <Link
+          to="/contact"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-brand)] transition-colors"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span>Back to Verification Queue</span>
+        </Link>
+      </div>
 
-      <Card>
+      {/* Main Review Card */}
+      <Card className="overflow-hidden">
         <CardHeader
-          title={`Verification request · Tier ${item.tier}`}
-          subtitle="Sent through a channel the caller does not control."
+          title={
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="h-4 w-4 text-[var(--color-brand)]" />
+              <span>Independent Verification (Tier {item.tier})</span>
+            </div>
+          }
+          subtitle="Delivered via independent secure channel."
           right={<VerificationStatusBadge status={item.status} />}
         />
-        <CardBody className="flex flex-col gap-4">
-          <p className="text-sm">
-            Someone is asking to send <span className="font-semibold">{formatCurrency(item.amount)}</span> on behalf of a
-            family member claiming to be <span className="font-semibold">{item.claimed_identity ?? "unknown"}</span>. Is
-            this genuine?
-          </p>
+        <CardBody className="flex flex-col gap-5">
+          {/* Main Question Box */}
+          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4">
+            <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider font-semibold">
+              Intercepted Situation
+            </p>
+            <p className="mt-1.5 text-sm text-[var(--color-text)] leading-relaxed">
+              A high-risk request to transfer <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{formatCurrency(item.amount)}</span> was initiated. The caller claimed to be your family member:{" "}
+              <span className="font-bold text-[var(--color-text)] uppercase">{item.claimed_identity ?? "Unknown"}</span>.
+            </p>
+          </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Risk assessment indicators */}
+          <div className="flex flex-wrap items-center gap-3">
             <RiskBadge level={item.risk_level} />
             {item.risk_score !== null && item.risk_score !== undefined && (
-              <span className="text-xs text-[var(--color-text-muted)]">Risk score {item.risk_score}/100</span>
+              <span className="font-mono text-xs text-[var(--color-text-muted)]">
+                Threat Score: <strong className="text-[var(--color-text)]">{item.risk_score}/100</strong>
+              </span>
             )}
           </div>
 
+          {/* Reason chips */}
           {item.reason_codes.length > 0 && (
-            <ul className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {item.reason_codes.map((c) => (
-                <li key={c} className="rounded-full border border-[var(--color-border-strong)] px-2.5 py-1 text-xs">
+                <span
+                  key={c}
+                  className="rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface-raised)] px-2.5 py-1 text-[11px] font-medium text-[var(--color-text-muted)]"
+                >
                   {reasonLabel(c)}
-                </li>
+                </span>
               ))}
-            </ul>
+            </div>
           )}
 
+          {/* Intercepted Transcript */}
           {item.transcript_or_text && (
-            <div className="rounded-lg bg-[var(--color-surface-raised)] p-3 text-sm italic">“{item.transcript_or_text}”</div>
+            <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-3.5">
+              <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-faint)] mb-1">
+                <MessageSquare className="h-3 w-3" />
+                <span>Captured Caller Transcript</span>
+              </div>
+              <p className="text-xs italic text-[var(--color-text)] leading-relaxed">
+                “{item.transcript_or_text}”
+              </p>
+            </div>
           )}
 
+          {/* Escalation Notice */}
           {item.escalation_reason && (
-            <p className="text-xs text-[var(--color-text-muted)]">
-              Escalated because: {item.escalation_reason.replace(/_/g, " ").toLowerCase()}
-            </p>
+            <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
+              <span>Escalated because: {item.escalation_reason.replace(/_/g, " ").toLowerCase()}</span>
+            </div>
           )}
 
+          {/* Countdown timer */}
           {isPending && (
-            <div className="flex items-center justify-between rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface-raised)] px-3 py-2 text-sm">
-              <span className="text-[var(--color-text-muted)]">Expires in</span>
+            <div className="flex items-center justify-between rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-surface-raised)] p-3">
+              <div className="flex items-center gap-2 text-xs font-medium text-[var(--color-text-muted)]">
+                <Clock className="h-3.5 w-3.5 text-[var(--color-brand)]" />
+                <span>Verification Decision Window</span>
+              </div>
               <Countdown expiresAt={item.expires_at} />
             </div>
           )}
         </CardBody>
       </Card>
 
+      {/* Tier 3: One-time relay code */}
       {isTier3 ? (
-        <Card>
-          <CardHeader title="One-time relay code" subtitle="Share this only after confirming their identity another way (e.g. a phone call)." />
-          <CardBody>
+        <Card className="overflow-hidden border-[var(--color-brand)]/40">
+          <CardHeader
+            title={
+              <div className="flex items-center gap-2">
+                <KeyRound className="h-4 w-4 text-[var(--color-brand)]" />
+                <span>Out-of-Band Relay Code</span>
+              </div>
+            }
+            subtitle="Share this verbal PIN with the requester only after independent direct phone confirmation."
+          />
+          <CardBody className="flex flex-col gap-4">
             {isPending ? (
               <>
-                <p className="mb-3 text-xs text-[var(--color-text-muted)]">
-                  DEMO NOTE: in production this code is delivered out-of-band (SMS/voice); this prototype has no
-                  telephony integration, so it's shown here directly so the demo is fully operable.
+                <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+                  Call your family member on a known, pre-saved phone number to verify their voice in person. Read this PIN to them to finalize authorization:
                 </p>
-                <div className="rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface-raised)] py-4 text-center font-mono text-3xl font-bold tracking-[0.4em]">
+                <div className="rounded-xl border border-[var(--color-brand)]/40 bg-[var(--color-surface-raised)] py-5 text-center font-mono text-4xl font-extrabold tracking-[0.4em] text-[var(--color-brand)] shadow-inner">
                   {item.demo_code}
                 </div>
               </>
             ) : (
-              <p className="text-sm text-[var(--color-text-muted)]">This code has already been resolved.</p>
+              <p className="text-xs text-[var(--color-text-muted)]">This relay code authorization has concluded.</p>
             )}
           </CardBody>
         </Card>
       ) : (
         isPending && (
-          <div className="flex gap-3">
-            <Button variant="confirm" fullWidth loading={responding === "CONFIRMED"} disabled={!!responding} onClick={() => respond("CONFIRMED")}>
-              Confirm — this is genuine
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Button
+              variant="confirm"
+              fullWidth
+              loading={responding === "CONFIRMED"}
+              disabled={!!responding}
+              onClick={() => respond("CONFIRMED")}
+              className="py-3 text-xs uppercase tracking-wider"
+            >
+              <Check className="h-4 w-4 mr-1.5 inline" />
+              Confirm — Request is Genuine
             </Button>
-            <Button variant="reject" fullWidth loading={responding === "REJECTED"} disabled={!!responding} onClick={() => respond("REJECTED")}>
-              Reject
+            <Button
+              variant="reject"
+              fullWidth
+              loading={responding === "REJECTED"}
+              disabled={!!responding}
+              onClick={() => respond("REJECTED")}
+              className="py-3 text-xs uppercase tracking-wider"
+            >
+              <X className="h-4 w-4 mr-1.5 inline" />
+              Reject — Scam or Suspicious
             </Button>
           </div>
         )

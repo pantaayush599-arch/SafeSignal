@@ -189,3 +189,24 @@ def test_transcript_amount_detection():
     assert not mentions("Hey, are we still on for lunch tomorrow at 1pm?")
     assert not mentions("Please send me the money right now, I need it")
     assert not mentions(None)
+
+
+def test_analyze_accepts_web_form_payload(client, tokens):
+    """The web form sends raw_text / requested_amount with no request_id or input_type."""
+    r = client.post("/analyze-request", json={
+        "requester_id": "user_102", "channel": "voice_call", "claimed_identity": "son",
+        "raw_text": "Dad, I've been arrested. Send ₹80,000 right now. Please don't tell anyone.",
+        "requested_amount": 80000,
+    }, headers=auth(tokens["requester"]))
+    assert r.status_code == 200
+    body = r.json()
+    assert body["request_id"].startswith("req_")
+    assert body["risk_level"] == "HIGH"
+
+    state = client.get(f"/requests/{body['request_id']}", headers=auth(tokens["requester"])).json()
+    assert state["amount"] == 80000
+    assert state["transcript_or_text"].startswith("Dad, I've been arrested")
+
+    empty = client.post("/analyze-request", json={"requester_id": "user_102", "channel": "text"},
+                        headers=auth(tokens["requester"]))
+    assert empty.status_code == 422

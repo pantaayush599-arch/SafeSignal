@@ -9,6 +9,7 @@ import { RequestHistory } from "./pages/requester/RequestHistory";
 import { ContactInbox } from "./pages/contact/ContactInbox";
 import { VerificationDetail } from "./pages/contact/VerificationDetail";
 import { FamilyDashboard } from "./pages/FamilyDashboard";
+import { Settings } from "./pages/Settings";
 import { NotFound } from "./pages/NotFound";
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/contact" element={<PageTransition><ContactInbox /></PageTransition>} />
           <Route path="/contact/verifications/:verificationId" element={<PageTransition><VerificationDetail /></PageTransition>} />
           <Route path="/dashboard/:requesterId" element={<PageTransition><FamilyDashboard /></PageTransition>} />
+          <Route path="/settings" element={<PageTransition><Settings /></PageTransition>} />
           <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
         </Routes>
       </AnimatePresence>

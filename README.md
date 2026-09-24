@@ -30,7 +30,7 @@ secondary trusted contact. `GET /demo/identities` lists their tokens (used
 by the frontend's persona picker — see the note on demo-only additions
 below).
 
-Run tests: `pytest` (25 tests covering the full DETECT→PAUSE→VERIFY→DECIDE
+Run tests: `pytest` (30 tests covering the full DETECT→PAUSE→VERIFY→DECIDE
 flow, all tier outcomes, auth boundaries, audio errors, Firebase login,
 the panic button, the MEDIUM/REVIEW path, and the family dashboard).
 
@@ -63,15 +63,25 @@ via `SAFESIGNAL_WHISPER_MODEL` / `SAFESIGNAL_WHISPER_DEVICE` /
 ```bash
 cd frontend
 npm install
-cp .env.example .env   # VITE_API_BASE_URL, defaults to http://127.0.0.1:8000
 npm run dev
 ```
 
-Runs on `http://127.0.0.1:5173`. Build for production with `npm run build`.
-Copy `VITE_FIREBASE_*` from a real Firebase project into `.env` to enable
-real phone-OTP/Google sign-in on the login page; leave them unset (the
-default) and the page falls back to the demo persona picker, which is the
-only path tested in this build environment.
+Runs on `http://127.0.0.1:3000`. The app calls the API on its own origin,
+so the Vite dev server proxies the API routes and `/ws` to the backend on
+`http://127.0.0.1:8000` (set `SAFESIGNAL_API_URL` to point it elsewhere).
+Copy `.env.example` to `.env` only if you need to override
+`VITE_API_BASE_URL` / `VITE_WS_URL` or add `VITE_FIREBASE_*` keys for real
+phone-OTP/Google sign-in; without Firebase keys the page falls back to the
+demo persona picker.
+
+For a single-server setup, run `npm run build`: the backend then serves
+`frontend/dist` itself, so the whole app is available on
+`http://127.0.0.1:8000` (override the folder with
+`SAFESIGNAL_FRONTEND_DIST`).
+
+`npm run dev:mock` runs `server.ts`, a standalone in-memory Node mock of
+the API, if you want to try the UI without the Python backend. It is not
+kept in sync with the backend.
 
 ## Trying the demo
 

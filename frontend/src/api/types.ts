@@ -128,6 +128,14 @@ export interface DemoIdentity {
   requester_id?: string | null; // set for role="contact": which requester's family they belong to
 }
 
+export interface TrustedContactOut {
+  contact_id: string;
+  requester_id: string;
+  contact_name: string;
+  phone_number: string;
+  contact_type: ContactType;
+}
+
 export interface LoginOut {
   requester_id: string;
   name: string;

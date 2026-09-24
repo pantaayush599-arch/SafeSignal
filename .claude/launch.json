@@ -4,17 +4,25 @@
     {
       "name": "frontend",
       "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "[ -d node_modules ] || npm install; npm run dev -- --host 127.0.0.1 --port 5173 --strictPort"],
+      "runtimeArgs": [
+        "-c",
+        "[ -d node_modules ] || npm install; npm run dev -- --strictPort"
+      ],
       "cwd": "frontend",
-      "port": 5173
+      "port": 3000
     },
     {
       "name": "backend",
       "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "[ -x venv/bin/uvicorn ] || { python3 -m venv venv && venv/bin/pip install -q -r requirements.txt; }; exec venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000"],
+      "runtimeArgs": [
+        "-c",
+        "[ -x venv/bin/uvicorn ] || { python3 -m venv venv && venv/bin/pip install -q -r requirements.txt; }; exec venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000"
+      ],
       "cwd": "backend",
       "port": 8000,
-      "env": { "SAFESIGNAL_AUTH_DEV_MODE": "true" }
+      "env": {
+        "SAFESIGNAL_AUTH_DEV_MODE": "true"
+      }
     }
   ]
 }

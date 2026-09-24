@@ -13,11 +13,16 @@ import type {
   RequestStateOut,
   Tier3StartOut,
   Tier3SubmitOut,
+  TrustedContactOut,
   VerifyRespondOut,
 } from "./types";
 
-export const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
-export const WS_BASE = API_BASE.replace(/^http/, "ws");
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
+export const WS_BASE =
+  import.meta.env.VITE_WS_URL ||
+  (typeof window !== "undefined"
+    ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}`
+    : "ws://127.0.0.1:3000");
 
 async function request<T>(path: string, options: RequestInit & { token?: string } = {}): Promise<T> {
   const { token, headers, ...rest } = options;
@@ -119,6 +124,20 @@ export const submitTier3 = (token: string, verificationId: string, code: string)
 // -------------------------------------------------------------- contacts
 export const getContactInbox = (token: string, contactId: string) =>
   request<ContactInboxItem[]>(`/contacts/${contactId}/inbox`, { token });
+
+export const getContacts = (token: string, requesterId: string) =>
+  request<TrustedContactOut[]>(`/contacts/${requesterId}`, { token });
+
+export const createContact = (
+  token: string,
+  body: {
+    requester_id: string;
+    contact_name: string;
+    phone_number: string;
+    contact_type: "PRIMARY" | "SECONDARY";
+  }
+) =>
+  request<TrustedContactOut>("/contacts", { method: "POST", token, body: JSON.stringify(body) });
 
 // -------------------------------------------------------------- auth
 export const loginWithFirebaseToken = (idToken: string) =>

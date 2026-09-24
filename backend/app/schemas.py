@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 from typing import List, Optional
 
@@ -35,6 +36,26 @@ class AnalyzeRequestIn(BaseModel):
     timestamp: Optional[datetime] = None
 
     _check_claimed_identity = field_validator("claimed_identity")(_normalize_claimed_identity)
+
+    @model_validator(mode="before")
+    @classmethod
+    def accept_frontend_aliases(cls, data):
+        """The web form posts raw_text / audio_base64 / requested_amount and
+        leaves out request_id and input_type. Map those onto the contract
+        fields: input_type is inferred from which payload is present, and a
+        request_id is generated when none is supplied."""
+        if not isinstance(data, dict):
+            return data
+        data = dict(data)
+        for alias, field in (("raw_text", "transcript_or_text"), ("audio_base64", "audio"),
+                             ("requested_amount", "amount")):
+            if data.get(field) is None and data.get(alias) is not None:
+                data[field] = data[alias]
+        if not data.get("input_type"):
+            data["input_type"] = InputType.AUDIO.value if data.get("audio") else InputType.TEXT.value
+        if not data.get("request_id"):
+            data["request_id"] = f"req_{uuid.uuid4().hex[:8]}"
+        return data
 
     @model_validator(mode="after")
     def check_input(self):

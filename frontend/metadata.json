@@ -1,0 +1,8 @@
+{
+  "name": "SafeSignal",
+  "description": "SafeSignal detects high-risk, deepfake-style emergency requests, pauses the action, and requires independent verification from a trusted contact before anything is allowed.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -51,3 +51,12 @@ WHISPER_DEVICE = os.environ.get("SAFESIGNAL_WHISPER_DEVICE", "cpu")
 WHISPER_COMPUTE_TYPE = os.environ.get("SAFESIGNAL_WHISPER_COMPUTE_TYPE", "int8")
 
 CORS_ORIGINS = os.environ.get("SAFESIGNAL_CORS_ORIGINS", "*").split(",")
+
+# --- Frontend ---
+# Built SPA (`npm run build` in frontend/). When the folder exists the API
+# also serves it, so the app and API share one origin -- the frontend calls
+# the API on its own origin by default.
+FRONTEND_DIST = os.environ.get(
+    "SAFESIGNAL_FRONTEND_DIST",
+    os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"),
+)

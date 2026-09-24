@@ -1,12 +1,13 @@
 import asyncio
 import logging
+import os
 
 from fastapi import FastAPI, Request as FastAPIRequest
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.exc import IntegrityError
 
-from app.config import CORS_ORIGINS
+from app.config import CORS_ORIGINS, FRONTEND_DIST
 from app import database
 from app.database import Base
 from app.routers import analyze, verify, requests as requests_router, contacts, health, demo, auth, panic
@@ -89,3 +90,17 @@ async def integrity_error_handler(request: FastAPIRequest, exc: IntegrityError):
 async def unhandled_exception_handler(request: FastAPIRequest, exc: Exception):
     logger.exception("Unhandled error")
     return JSONResponse(status_code=500, content={"error": {"code": "INTERNAL_ERROR", "message": str(exc)}})
+
+
+# Serve the built frontend (if present) on the same origin as the API.
+# Registered last so every API route above wins; any other GET path falls
+# back to index.html for client-side routing.
+if os.path.isfile(os.path.join(FRONTEND_DIST, "index.html")):
+    _dist_root = os.path.realpath(FRONTEND_DIST)
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_frontend(full_path: str):
+        candidate = os.path.realpath(os.path.join(_dist_root, full_path))
+        if candidate.startswith(_dist_root + os.sep) and os.path.isfile(candidate):
+            return FileResponse(candidate)
+        return FileResponse(os.path.join(_dist_root, "index.html"))
