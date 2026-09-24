@@ -73,6 +73,23 @@ SIGNAL_RULES = [
     ], 11),
 ]
 
+# Does the transcript state an amount of money at all? Used to decide whether
+# the wallet-transfer option belongs in the request summary.
+AMOUNT_PATTERNS = [
+    r"(₹|\brs\.?|\binr\b|\$)\s?\d",                    # ₹80,000 / Rs 500 / $200
+    r"\d[\d,.]*\s*(k\b|lakhs?|lacs?|crores?|thousand|hundred|rupees?|rupay?e?|rs\b|inr\b|dollars?|bucks|hazaa?r)",
+    r"\b(send|pay|transfer)(\s+(me|us|him|her|them))?\s+\d",  # "send me 5000"
+    r"\b\d{1,3}(,\d{2,3})+\b",                            # 80,000 / 1,00,000
+    r"\b(thousand|lakhs?|lacs?|crores?|hazaa?r)\b",
+    r"\d*\s*(रुपय[ेा]|रुपए|हज़ार|हजार|लाख|करोड़)",
+]
+
+
+def transcript_mentions_amount(transcript: str | None) -> bool:
+    text = (transcript or "").lower()
+    return any(re.search(p, text, re.UNICODE) for p in AMOUNT_PATTERNS)
+
+
 DEEPFAKE_ADVISORY_THRESHOLD = 0.6
 DEEPFAKE_ADVISORY_WEIGHT = 8
 

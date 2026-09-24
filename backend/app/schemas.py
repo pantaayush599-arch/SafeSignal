@@ -1,12 +1,23 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.enums import (
-    InputType, Channel, ActionType, ContactType, RiskLevel, Decision,
+    InputType, Channel, ActionType, ClaimedIdentity, ContactType, RiskLevel, Decision,
     RequestStatus, VerificationStatus, AuthProvider,
 )
+
+
+def _normalize_claimed_identity(value: Optional[str]) -> Optional[str]:
+    """Blank -> None; otherwise must be one of ClaimedIdentity (case-insensitive)."""
+    if value is None or not value.strip():
+        return None
+    normalized = value.strip().lower()
+    allowed = [c.value for c in ClaimedIdentity]
+    if normalized not in allowed:
+        raise ValueError(f"claimed_identity must be one of: {', '.join(allowed)}")
+    return normalized
 
 
 # ---------------------------------------------------------------- analyze
@@ -22,6 +33,8 @@ class AnalyzeRequestIn(BaseModel):
     amount: Optional[float] = None
     deepfake_signal_score: Optional[float] = Field(default=None, ge=0.0, le=1.0)
     timestamp: Optional[datetime] = None
+
+    _check_claimed_identity = field_validator("claimed_identity")(_normalize_claimed_identity)
 
     @model_validator(mode="after")
     def check_input(self):
@@ -138,6 +151,9 @@ class RequestStateOut(BaseModel):
     channel: Optional[str] = None
     verification_required: bool = False
     request_status: RequestStatus
+    # True only when the transcript itself mentions an amount; the UI hides
+    # the wallet-transfer card otherwise.
+    transfer_requested: bool = False
     current_tier: Optional[int] = None
     override_reason: Optional[str] = None
     override_at: Optional[datetime] = None
@@ -259,6 +275,9 @@ class LoginOut(BaseModel):
 class PanicIn(BaseModel):
     request_id: Optional[str] = None
     note: Optional[str] = None
+    claimed_identity: Optional[str] = None
+
+    _check_claimed_identity = field_validator("claimed_identity")(_normalize_claimed_identity)
 
 
 # ---------------------------------------------------------------- family dashboard

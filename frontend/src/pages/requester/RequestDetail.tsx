@@ -79,16 +79,19 @@ export function RequestDetail() {
       )}
 
       <RiskAnalysisCard state={state} />
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={state.request_status}
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-        >
-          <ProtectedActionCard state={state} />
-        </motion.div>
-      </AnimatePresence>
+      {/* No amount in the transcript means there's no transfer to protect. */}
+      {state.transfer_requested && (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={state.request_status}
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
+            <ProtectedActionCard state={state} />
+          </motion.div>
+        </AnimatePresence>
+      )}
 
       {state.verification_required && (
         <VerificationProgress

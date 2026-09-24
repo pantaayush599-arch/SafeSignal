@@ -12,16 +12,24 @@ export function Modal({
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  // Callers usually pass a fresh inline onClose each render. Reading it via a
+  // ref keeps the effect below from re-running (and re-focusing the dialog,
+  // which stole focus from textareas after every keystroke) on each render.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     };
     document.addEventListener("keydown", onKey);
-    ref.current?.focus();
+    // Only take focus if nothing inside the dialog (e.g. an autoFocus field) already has it.
+    if (!ref.current?.contains(document.activeElement)) ref.current?.focus();
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

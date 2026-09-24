@@ -134,3 +134,58 @@ def test_family_dashboard_lists_requester_requests_and_is_ownership_checked(clie
     # A stranger token cannot.
     r3 = client.get("/requesters/user_102/dashboard", headers={"Authorization": "Bearer not-a-real-token"})
     assert r3.status_code == 401
+
+
+def test_claimed_identity_must_be_a_known_relation(client, tokens):
+    base = {
+        "requester_id": "user_102", "action_type": "wallet_transfer",
+        "channel": "voice_call", "input_type": "TEXT", "transcript_or_text": "Hi, it's me.",
+    }
+    ok = client.post("/analyze-request", json={**base, "request_id": "req_rel_ok", "claimed_identity": " Daughter "},
+                     headers=auth(tokens["requester"]))
+    assert ok.status_code == 200
+    state = client.get("/requests/req_rel_ok", headers=auth(tokens["requester"])).json()
+    assert state["claimed_identity"] == "daughter"
+
+    bad = client.post("/analyze-request", json={**base, "request_id": "req_rel_bad", "claimed_identity": "the bank"},
+                      headers=auth(tokens["requester"]))
+    assert bad.status_code == 422
+
+    panic_bad = client.post("/panic", json={"claimed_identity": "nobody"}, headers=auth(tokens["requester"]))
+    assert panic_bad.status_code == 422
+
+
+def test_panic_records_claimed_identity(client, tokens):
+    r = client.post("/panic", json={"claimed_identity": "son"}, headers=auth(tokens["requester"]))
+    assert r.status_code == 200
+    state = client.get(f"/requests/{r.json()['request_id']}", headers=auth(tokens["requester"])).json()
+    assert state["claimed_identity"] == "son"
+
+
+def test_transfer_requested_only_when_transcript_mentions_amount(client, tokens):
+    base = {"requester_id": "user_102", "action_type": "wallet_transfer", "channel": "voice_call", "input_type": "TEXT"}
+    with_amount = client.post("/analyze-request", json={
+        **base, "request_id": "req_amt_yes",
+        "transcript_or_text": "Dad, I've been arrested. Send ₹80,000 right now.",
+    }, headers=auth(tokens["requester"]))
+    without_amount = client.post("/analyze-request", json={
+        **base, "request_id": "req_amt_no", "amount": 5000,
+        "transcript_or_text": "Dad, I've been arrested, please call me back urgently.",
+    }, headers=auth(tokens["requester"]))
+    assert with_amount.status_code == 200 and without_amount.status_code == 200
+
+    yes = client.get("/requests/req_amt_yes", headers=auth(tokens["requester"])).json()
+    no = client.get("/requests/req_amt_no", headers=auth(tokens["requester"])).json()
+    assert yes["transfer_requested"] is True
+    assert no["transfer_requested"] is False
+
+
+def test_transcript_amount_detection():
+    from app.risk_engine import transcript_mentions_amount as mentions
+    assert mentions("Send ₹80,000 right now")
+    assert mentions("send me 5000")
+    assert mentions("need 2 lakh urgently")
+    assert mentions("मुझे 500 रुपये भेजो")
+    assert not mentions("Hey, are we still on for lunch tomorrow at 1pm?")
+    assert not mentions("Please send me the money right now, I need it")
+    assert not mentions(None)

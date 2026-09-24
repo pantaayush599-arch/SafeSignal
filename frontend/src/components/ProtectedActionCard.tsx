@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardBody } from "./ui/Card";
 import type { RequestStateOut } from "../api/types";
 import { formatCurrency } from "../lib/format";
+import { relationLabel } from "../lib/relations";
 
 export function ProtectedActionCard({ state }: { state: RequestStateOut }) {
   const locked = state.request_status === "STAYS-PAUSED" || state.request_status === "TIMED-OUT";
@@ -47,7 +48,7 @@ export function ProtectedActionCard({ state }: { state: RequestStateOut }) {
       <CardBody>
         <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3">
           <span className="text-sm text-[var(--color-text-muted)]">Recipient (claimed)</span>
-          <span className="font-semibold">{state.claimed_identity ?? "Unknown"}</span>
+          <span className="font-semibold">{relationLabel(state.claimed_identity)}</span>
         </div>
         <div className="flex items-center justify-between border-b border-[var(--color-border)] py-3">
           <span className="text-sm text-[var(--color-text-muted)]">Amount</span>

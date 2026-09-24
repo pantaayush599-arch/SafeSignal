@@ -44,7 +44,7 @@ async def panic(
         requester_id=requester.requester_id,
         action_type="wallet_transfer",
         channel="voice_call",
-        claimed_identity=None,
+        claimed_identity=body.claimed_identity,
         input_type="TEXT",
         transcript_or_text=body.note or "User manually triggered the panic button during a call they're suspicious of.",
         risk_score=100,

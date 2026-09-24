@@ -47,6 +47,8 @@ export interface RequestStateOut {
   channel?: string | null;
   verification_required: boolean;
   request_status: RequestStatus;
+  /** True only when the transcript mentions an amount; otherwise no transfer card is shown. */
+  transfer_requested: boolean;
   current_tier?: number | null;
   override_reason?: string | null;
   override_at?: string | null;

@@ -7,6 +7,7 @@ import { triggerPanic } from "../api/client";
 import { describeError } from "../lib/errors";
 import { useIdentity } from "../state/identity";
 import { recordRequestId } from "../pages/requester/RequestHistory";
+import { RELATIONS } from "../lib/relations";
 
 /**
  * Manual in-call panic button (team scope: HIGH priority). Independent of
@@ -18,6 +19,7 @@ export function PanicButton() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState("");
+  const [claimedIdentity, setClaimedIdentity] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<{ title: string; message: string } | null>(null);
 
@@ -28,10 +30,11 @@ export function PanicButton() {
     setSubmitting(true);
     setError(null);
     try {
-      const result = await triggerPanic(identity!.token, note.trim() || undefined);
+      const result = await triggerPanic(identity!.token, note.trim() || undefined, claimedIdentity || undefined);
       recordRequestId(identity!.id, result.request_id);
       setOpen(false);
       setNote("");
+      setClaimedIdentity("");
       navigate(`/requester/requests/${result.request_id}`);
     } catch (err) {
       setError(describeError(err));
@@ -61,6 +64,22 @@ export function PanicButton() {
             This immediately pauses whatever you're worried about and sends a verification request to your trusted
             contact — independent of anything the automatic risk detection decided.
           </p>
+          <label htmlFor="panic-claimed" className="text-sm">
+            <span className="mb-1.5 block font-medium">Who is the caller claiming to be? (optional)</span>
+            <select
+              id="panic-claimed"
+              value={claimedIdentity}
+              onChange={(e) => setClaimedIdentity(e.target.value)}
+              className="w-full rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface-raised)] px-3 py-2 text-sm outline-none focus:border-[var(--color-brand)]"
+            >
+              <option value="">Not sure</option>
+              {RELATIONS.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <label htmlFor="panic-note" className="text-sm">
             <span className="mb-1.5 block font-medium">What's happening? (optional)</span>
             <textarea

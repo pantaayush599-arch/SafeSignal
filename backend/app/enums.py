@@ -32,6 +32,30 @@ class ActionType(str, Enum):
     OTHER = "other"
 
 
+class ClaimedIdentity(str, Enum):
+    """Who the caller/sender claims to be -- shown as the transfer
+    "Recipient (claimed)". A fixed list of family/social relations so the
+    field can't hold arbitrary free text; OTHER covers anyone not listed."""
+    SON = "son"
+    DAUGHTER = "daughter"
+    MOTHER = "mother"
+    FATHER = "father"
+    HUSBAND = "husband"
+    WIFE = "wife"
+    BROTHER = "brother"
+    SISTER = "sister"
+    GRANDSON = "grandson"
+    GRANDDAUGHTER = "granddaughter"
+    GRANDFATHER = "grandfather"
+    GRANDMOTHER = "grandmother"
+    UNCLE = "uncle"
+    AUNT = "aunt"
+    COUSIN = "cousin"
+    FRIEND = "friend"
+    COLLEAGUE = "colleague"
+    OTHER = "other"
+
+
 class ContactType(str, Enum):
     PRIMARY = "PRIMARY"
     SECONDARY = "SECONDARY"

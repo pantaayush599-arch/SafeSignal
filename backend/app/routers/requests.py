@@ -9,6 +9,7 @@ from app.database import get_db
 from app import database
 from app.enums import RequestStatus
 from app.models import Request, TrustedContact, Requester
+from app.risk_engine import transcript_mentions_amount
 from app.schemas import (
     RequestStateOut, ManualOverrideIn, ManualOverrideOut, AuditTrailOut, AuditEventOut,
     VerificationSummary, ContactInboxItem, DashboardOut, DashboardEntry,
@@ -54,6 +55,7 @@ def get_request(request_id: str, db: Session = Depends(get_db), identity=Depends
         channel=req.channel,
         verification_required=req.verification_required,
         request_status=req.request_status,
+        transfer_requested=transcript_mentions_amount(req.transcript_or_text),
         current_tier=req.current_tier,
         override_reason=req.override_reason,
         override_at=req.override_at,

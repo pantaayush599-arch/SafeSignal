@@ -125,8 +125,12 @@ export const loginWithFirebaseToken = (idToken: string) =>
   request<LoginOut>("/auth/login", { method: "POST", body: JSON.stringify({ id_token: idToken }) });
 
 // -------------------------------------------------------------- panic button
-export const triggerPanic = (token: string, note?: string) =>
-  request<AnalyzeRequestOut>("/panic", { method: "POST", token, body: JSON.stringify({ note }) });
+export const triggerPanic = (token: string, note?: string, claimedIdentity?: string) =>
+  request<AnalyzeRequestOut>("/panic", {
+    method: "POST",
+    token,
+    body: JSON.stringify({ note, claimed_identity: claimedIdentity }),
+  });
 
 // -------------------------------------------------------------- family dashboard
 export const getDashboard = (token: string, requesterId: string) =>
